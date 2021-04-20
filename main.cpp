@@ -12,7 +12,10 @@ using namespace std;
 
 HANDLE GetProcess(int pID) {
 
-    HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pID);
+    HANDLE hProcess = OpenProcess(
+            PROCESS_ALL_ACCESS,
+            FALSE,
+            pID);
 
     if (hProcess == nullptr) {
         cout << "OpenProcess failed. GetLastError = " << dec << GetLastError() << endl;
@@ -23,8 +26,39 @@ HANDLE GetProcess(int pID) {
 }
 
 
+void WriteToTargetProcess(HANDLE hProcess) {
+
+    int memoryAddress = 0;
+    int intToWrite = 0;
+    int intToRead = 0;
+    cout << "Enter the address for the target process: " << endl;
+    cin >> hex >> memoryAddress;
+
+    bool readingProcess = ReadProcessMemory(
+            hProcess,
+            (LPCVOID)memoryAddress,
+            &intToRead,
+            sizeof(int),
+            NULL);
+
+    readingProcess? cout << "Changing value: " << intToRead << endl: cout << "Reading Process Failed: " << GetLastError() << endl;
+
+    cout << "Enter the value to be inserted: " << endl;
+    cin >> dec >> intToWrite;
+
+    bool writeProcess = WriteProcessMemory(
+            hProcess,
+            (LPVOID)memoryAddress,
+            &intToWrite,
+            sizeof(int),
+            NULL);
+
+    writeProcess? cout << "Value changed" << endl: cout << "Writing Process Failed: " << GetLastError() << endl;
+
+}
+
 int main() {
-    while (true) {
+
 
         int processID = 0;
 
@@ -39,7 +73,11 @@ int main() {
         HMODULE firstMod = nullptr;
         unsigned int i;
 
-        if (EnumProcessModules(hProcess, hMods, sizeof(hMods), &cbNeeded)) {
+        if (EnumProcessModules(
+                hProcess,
+                hMods,
+                sizeof(hMods),
+                &cbNeeded)) {
             for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++) {
                 TCHAR szModName[MAX_PATH];
                 // Get the full path to the module's file.
@@ -64,7 +102,11 @@ int main() {
 //        cout << baseName << endl;
 
         MODULEINFO ModInfo;
-        bool ModuleInfo = GetModuleInformation(hProcess, firstMod, &ModInfo, sizeof(MODULEINFO));
+        bool ModuleInfo = GetModuleInformation(
+                hProcess,
+                firstMod,
+                &ModInfo,
+                sizeof(MODULEINFO));
 
         if(ModuleInfo) {
             cout << "Size Of The Image: " << ModInfo.SizeOfImage << endl;
@@ -74,9 +116,10 @@ int main() {
             cout << dec << GetLastError() << endl;
         }
 
+        WriteToTargetProcess(hProcess);
+
         system("pause>nul");
         CloseHandle(hProcess);
-    }
     return 0;
 }
 
