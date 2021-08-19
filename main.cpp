@@ -6,9 +6,26 @@
 #include <libloaderapi.h>
 #include <psapi.h>
 #include <tchar.h>
+#include <sstream>
 
 
 using namespace std;
+
+#define MY_TRACE(msg, ...) MyTraceImpl(__LINE__, __FILE__, msg, __VA_ARGS__)
+
+void MyTraceImpl(int line, const char* fileName, const char* msg, ...)
+{
+    va_list args;
+    char buffer[256] = { 0 };
+    sprintf_s(buffer, "%s(%d) : ", fileName, line);
+    OutputDebugString(buffer);
+
+    // retrieve the variable arguments
+            va_start(args, msg);
+    vsprintf_s(buffer, msg, args);
+    OutputDebugString(buffer);
+            va_end(args);
+}
 
 HANDLE GetProcess(int pID) {
 
@@ -57,69 +74,73 @@ void WriteToTargetProcess(HANDLE hProcess) {
 
 }
 
+void testDebug() {
+    MY_TRACE("hello world! %d, %d\n", 10, 42);
+}
+
 int main() {
 
+    testDebug();
 
-        int processID = 0;
+    int processID = 0;
 
-        cout << "Enter the PID: ";
-        cin >> processID;
+    cout << "Enter the PID: ";
+    cin >> processID;
 
-        //Check if process ID is open
-        HANDLE hProcess = GetProcess(processID);
+    //Check if process ID is open
+    HANDLE hProcess = GetProcess(processID);
 
-        HMODULE hMods[1024];
-        DWORD cbNeeded;
-        HMODULE firstMod = nullptr;
-        unsigned int i;
+    HMODULE hMods[1024];
+    DWORD cbNeeded;
+    HMODULE firstMod = nullptr;
+    unsigned int i;
 
-        if (EnumProcessModules(
-                hProcess,
-                hMods,
-                sizeof(hMods),
-                &cbNeeded)) {
-            for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++) {
-                TCHAR szModName[MAX_PATH];
-                // Get the full path to the module's file.
-                if (GetModuleFileNameEx(
-                        hProcess,
-                        hMods[i],
-                        szModName,
-                        sizeof(szModName) / sizeof(TCHAR))) {
-                    // Print the module name and handle value.
-                    _tprintf(TEXT("\t%s (0x%08X)\n"), szModName, hMods[i]);
-                }
-                firstMod = hMods[0];
+    if (EnumProcessModules(
+            hProcess,
+            hMods,
+            sizeof(hMods),
+            &cbNeeded)) {
+        for (i = 0; i < (cbNeeded / sizeof(HMODULE)); i++) {
+            TCHAR szModName[MAX_PATH];
+            // Get the full path to the module's file.
+            if (GetModuleFileNameEx(
+                    hProcess,
+                    hMods[i],
+                    szModName,
+                    sizeof(szModName) / sizeof(TCHAR))) {
+                // Print the module name and handle value.
+                _tprintf(TEXT("\t%s (0x%08X)\n"), szModName, hMods[i]);
             }
-        } else {
-            cout << "Enum Process Failed: " << endl;
-            cout << dec << GetLastError() << endl;
+            firstMod = hMods[0];
         }
+    } else {
+        cout << "Enum Process Failed: " << endl;
+        cout << dec << GetLastError() << endl;
+    }
 
 //        TCHAR baseName[MAX_PATH];
 //        DWORD ModuleName = GetModuleBaseNameA(hProcess, firstMod, baseName, sizeof(baseName) / sizeof(TCHAR));
 //
 //        cout << baseName << endl;
 
-        MODULEINFO ModInfo;
-        bool ModuleInfo = GetModuleInformation(
-                hProcess,
-                firstMod,
-                &ModInfo,
-                sizeof(MODULEINFO));
+    MODULEINFO ModInfo;
+    bool ModuleInfo = GetModuleInformation(
+            hProcess,
+            firstMod,
+            &ModInfo,
+            sizeof(MODULEINFO));
 
-        if(ModuleInfo) {
-            cout << "Size Of The Image: " << ModInfo.SizeOfImage << endl;
-            cout << "Base of the DLL: " << ModInfo.lpBaseOfDll << endl;
-            cout << "Entry Point: " << ModInfo.EntryPoint << endl;
-        } else {
-            cout << dec << GetLastError() << endl;
-        }
+    if(ModuleInfo) {
+        cout << "Size Of The Image: " << ModInfo.SizeOfImage << endl;
+        cout << "Base of the DLL: " << ModInfo.lpBaseOfDll << endl;
+        cout << "Entry Point: " << ModInfo.EntryPoint << endl;
+    } else {
+        cout << dec << GetLastError() << endl;
+    }
 
-        WriteToTargetProcess(hProcess);
+    WriteToTargetProcess(hProcess);
 
-        system("pause>nul");
-        CloseHandle(hProcess);
+    system("pause>nul");
+    CloseHandle(hProcess);
     return 0;
 }
-
