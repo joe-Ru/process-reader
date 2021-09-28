@@ -75,6 +75,7 @@ void WriteToTargetProcess(HANDLE hProcess) {
 }
 
 void testDebug() {
+    string myVar = "Hello";
     MY_TRACE("hello world! %d, %d\n", 10, 42);
 }
 
