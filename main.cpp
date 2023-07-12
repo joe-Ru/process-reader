@@ -12,6 +12,7 @@
 using namespace std;
 
 #define MY_TRACE(msg, ...) MyTraceImpl(__LINE__, __FILE__, msg, __VA_ARGS__)
+#define LOG(x) std::cout << x << endl;
 
 void MyTraceImpl(int line, const char* fileName, const char* msg, ...)
 {
